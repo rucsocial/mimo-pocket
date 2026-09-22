@@ -1747,9 +1747,19 @@ def session_token_ok(supplied: str) -> bool:
 
 
 BRIDGE_DIR = Path(__file__).resolve().parent
-QRTOOL = BRIDGE_DIR / "qr.js"
 QR_DIR = _HOME / "qr"
 APP_FILE = WORKDIR / "index.html"
+
+
+def find_qrtool() -> tuple[str, str]:
+    """Locate qr.js and the cwd node should run in (repo layout or legacy)."""
+    for js, cwd in (
+        (BRIDGE_DIR / "qr.js", BRIDGE_DIR),
+        (_HOME / "qrtool" / "qr.js", _HOME / "qrtool"),
+    ):
+        if js.is_file():
+            return str(js), str(cwd)
+    raise RuntimeError("未找到 qr.js：请确认仓库完整（bridge/qr.js），并在 bridge 目录执行 npm install")
 
 
 def tailscale_ip() -> str:
@@ -1796,11 +1806,53 @@ def tunnel_status() -> dict:
     }
 
 
+def ensure_cloudflared() -> str:
+    """Find cloudflared, or install it on first use (npm, then direct download).
+
+    Keeps the repo binary-free: a fresh clone just works when the user runs
+    `tunnel on` - nothing to pre-install.
+    """
+    exe = find_cloudflared()
+    if exe:
+        return exe
+    ensure_dirs()
+    npm = shutil_which("npm") or shutil_which("npm.cmd")
+    if npm:
+        try:
+            subprocess.run(
+                [npm, "install", "cloudflared", "--no-fund", "--no-audit"],
+                cwd=str(BRIDGE_DIR),
+                capture_output=True,
+                timeout=600,
+            )
+        except Exception:
+            pass
+        exe = find_cloudflared()
+        if exe:
+            return exe
+    name = "cloudflared.exe" if os.name == "nt" else "cloudflared"
+    url = (
+        "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
+        if os.name == "nt"
+        else "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
+    )
+    dest = _HOME / "tunnel-bin" / name
+    try:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        with urllib.request.urlopen(url, timeout=300) as resp, open(dest, "wb") as f:
+            f.write(resp.read())
+        if os.name != "nt":
+            os.chmod(dest, 0o755)
+        return str(dest)
+    except Exception as e:
+        raise RuntimeError(
+            f"未找到 cloudflared，自动下载也失败：{e}。可手动安装后重试：npm i -g cloudflared 或 winget install cloudflared"
+        )
+
+
 def start_tunnel() -> dict:
     """Cloudflare quick tunnel -> a public https URL (needs a token to use)."""
-    exe = find_cloudflared()
-    if not exe:
-        raise RuntimeError("未找到 cloudflared。请先安装：npm i -g cloudflared 或 winget install cloudflared")
+    exe = ensure_cloudflared()
     st = tunnel_status()
     if st["running"]:
         return st
@@ -1880,12 +1932,13 @@ def render_pair_qr(port: int | None = None) -> dict:
     QR_DIR.mkdir(parents=True, exist_ok=True)
     out = QR_DIR / "pair.png"
     node = shutil_which("node") or "node"
-    # cwd=bridge dir so `require('qrcode')` resolves to bridge/node_modules
+    js, cwd = find_qrtool()
+    # cwd holds qr.js and node_modules, so require('qrcode') resolves there
     proc = subprocess.run(
-        [node, str(QRTOOL), url, str(out)],
+        [node, js, url, str(out)],
         capture_output=True,
         timeout=30,
-        cwd=str(BRIDGE_DIR),
+        cwd=cwd,
     )
     if proc.returncode != 0 or not out.exists():
         err = ANSI_RE.sub("", (proc.stderr or b"").decode("utf-8", "replace") if isinstance(proc.stderr, bytes) else (proc.stderr or ""))

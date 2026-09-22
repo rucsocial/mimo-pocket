@@ -1,5 +1,12 @@
 # MiMo POCKET（MiMo Phone Bridge）
 
+> ⚠️ **先看这里**：本项目的执行引擎是 **MiMoCode CLI**。没有它，页面能打开但**发指令无法执行**。开始前请先：
+> ```powershell
+> npm i -g @mimo-ai/cli
+> mimo        # 按提示登录 / 配置可用模型
+> ```
+> 装好后，把本仓库丢给 **MiMo Desktop** 说「按 README 帮我安装」，或直接跑 `install.ps1`。
+
 > **用手机远程指挥你的电脑**：手机上打开一个网页 → 说话 → 电脑本地的 MiMo 真实执行（可读写文件、跑命令）→ 结果实时回传手机。电脑不在身边时，也能监督并推进电脑上的任务。
 
 非官方个人项目。**手机端零安装**——它是一个由你电脑托管的网页（PWA 体验），扫码即用。
@@ -112,10 +119,12 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 
 ## 出门也能用
 
-### 方式 A · cloudflared 公网隧道（内置，最快）
+### 方式 A · cloudflared 公网隧道（内置，开箱即用）
+
+**无需预装任何东西**——首次运行会自动下载 cloudflared（约 50MB，存到数据目录）：
 
 ```powershell
-python bridge\bridge.py tunnel on     # 开启公网隧道（首次自动使用 cloudflared）
+python bridge\bridge.py tunnel on     # 开启公网隧道（自动下载/调用 cloudflared）
 python bridge\bridge.py qr            # 二维码已自动变为公网地址
 ```
 
