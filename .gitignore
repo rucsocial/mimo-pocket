@@ -1,0 +1,31 @@
+# 本地工作区配置（MiMoCode 私有，不入库）
+.mimocode/
+
+# 依赖
+node_modules/
+
+# 运行时数据（实际生成在 ~/.local/share/mimocode/phone-remote，这里只是兜底）
+*.log
+*.pid
+auth_token.txt
+devices.json
+sessions.json
+pair_code.txt
+model.txt
+board.json
+qr/
+inbox/
+outbox/
+tmp/
+chat_tasks/
+
+# 系统/编辑器
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc

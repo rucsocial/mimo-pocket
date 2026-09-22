@@ -1,0 +1,4 @@
+{
+  "displayName": "Phone Pair QR",
+  "brief": "Show a pairing QR in chat; scan with the phone to open the app and pair automatically"
+}

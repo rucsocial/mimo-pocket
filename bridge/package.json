@@ -1,0 +1,9 @@
+{
+  "name": "mimo-phone-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "QR pairing helper for the MiMo phone bridge",
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  }
+}

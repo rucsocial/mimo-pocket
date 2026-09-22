@@ -1,0 +1,1214 @@
+<!-- AI生成 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0A0C10">
+<title>MiMo POCKET beta</title>
+<style>
+  :root {
+    --bg: #0A0C10;
+    --card: #141A24;
+    --card2: #1B2230;
+    --line: #232A38;
+    --ink: #EDF0F5;
+    --muted: #8B93A7;
+    --accent: #FF6A00;
+    --ok: #34C759;
+    --err: #FF453A;
+    --me: #FF6A00;
+    --bot: #1B2230;
+    --safe-t: env(safe-area-inset-top, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+  .app {
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  /* ---------- nav ---------- */
+  .nav {
+    position: sticky; top: 0; z-index: 20;
+    padding: calc(var(--safe-t) + 12px) 16px 10px;
+    background: rgba(10,12,16,.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-row { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto;
+    background: linear-gradient(135deg, #FF8A3D, var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px; color: #fff; letter-spacing: -.5px;
+  }
+  .brand { display: flex; flex-direction: column; min-width: 0; }
+  .brand b { font-size: 17px; font-weight: 700; letter-spacing: .2px; }
+  .brand span { font-size: 11px; color: var(--muted); letter-spacing: .3px; }
+  .beta {
+    align-self: flex-start;
+    margin-left: 2px; margin-top: 2px;
+    padding: 1px 6px; border-radius: 6px;
+    background: rgba(255,106,0,.16); color: var(--accent);
+    font-size: 10px; font-weight: 700; letter-spacing: .6px;
+  }
+  .spacer { flex: 1; }
+  .pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--line);
+    font-size: 12px; color: var(--muted); cursor: pointer;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: var(--ok); box-shadow: 0 0 0 3px rgba(52,199,89,.18); }
+  .dot.off { background: var(--err); box-shadow: 0 0 0 3px rgba(255,69,58,.18); }
+  .dot.demo { background: var(--accent); box-shadow: 0 0 0 3px rgba(255,106,0,.18); }
+
+  /* ---------- views ---------- */
+  .view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .view.active { display: flex; }
+  .h1 {
+    padding: 18px 16px 6px;
+    font-size: 28px; font-weight: 800; letter-spacing: .2px;
+  }
+  .sub { padding: 0 16px 12px; color: var(--muted); font-size: 13px; }
+  .scroll {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 0 16px calc(24px + var(--safe-b));
+  }
+
+  /* ---------- chat ---------- */
+  .chat-scroll {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 12px 14px 8px;
+  }
+  .msg { display: flex; margin: 8px 0; }
+  .msg.me { justify-content: flex-end; }
+  .msg.bot { justify-content: flex-start; }
+  .bubble {
+    max-width: 82%;
+    padding: 10px 13px;
+    border-radius: 18px;
+    font-size: 15px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+  .msg.me .bubble { background: var(--me); color: #fff; border-bottom-right-radius: 6px; }
+  .msg.bot .bubble { background: var(--bot); border-bottom-left-radius: 6px; }
+  .when {
+    font-size: 10px; color: var(--muted); margin: 2px 6px 10px;
+    display: flex; gap: 8px;
+  }
+  .msg.me + .when { justify-content: flex-end; }
+  .thinking {
+    display: inline-flex; gap: 4px; align-items: center;
+    color: var(--muted); font-size: 13px;
+  }
+  .thinking i {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+    animation: pulse 1s infinite ease-in-out;
+  }
+  .thinking i:nth-child(2) { animation-delay: .15s; }
+  .thinking i:nth-child(3) { animation-delay: .3s; }
+  @keyframes pulse {
+    0%, 80%, 100% { opacity: .25; transform: scale(.8); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+  .composer {
+    display: flex; gap: 8px; align-items: flex-end;
+    padding: 8px 12px calc(8px + var(--safe-b));
+    border-top: 1px solid var(--line);
+    background: rgba(10,12,16,.96);
+  }
+  .composer textarea {
+    flex: 1; min-width: 0;
+    min-height: 40px; max-height: 120px;
+    resize: none;
+    padding: 10px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    font: inherit; font-size: 15px;
+    outline: none;
+  }
+  .composer textarea:focus { border-color: var(--accent); }
+  .send {
+    width: 40px; height: 40px; flex: 0 0 auto;
+    border: 0; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .send:disabled { opacity: .4; }
+  .activity {
+    margin: 0 12px 6px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+    font-size: 11px;
+    color: var(--muted);
+    max-height: 128px;
+    overflow-y: auto;
+  }
+  .activity .ev { display: flex; gap: 6px; padding: 2px 0; align-items: baseline; }
+  .activity .ev b { color: var(--ink); font-weight: 600; flex: 0 0 auto; }
+  .activity .ev.tool b { color: var(--accent); }
+  .activity .ev.error b { color: var(--err); }
+  .activity .ev.risk b { color: var(--accent); }
+  .approve-bar {
+    margin: 0 12px 8px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,106,0,.45);
+    border-radius: 12px;
+    background: rgba(255,106,0,.12);
+  }
+  .approve-bar .risk { font-size: 13px; color: var(--ink); margin-bottom: 8px; }
+  .approve-bar .btns { display: flex; gap: 8px; }
+  .approve-bar button {
+    flex: 1; padding: 9px 0; border: 0; border-radius: 10px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .approve-bar .ok { background: var(--ok); color: #fff; }
+  .approve-bar .no { background: var(--card2); color: var(--ink); border: 1px solid var(--line); }
+  .ctxbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    border-top: 1px solid var(--line);
+    background: var(--card);
+    font-size: 12px; color: var(--muted);
+  }
+  .ctxbar b { color: var(--ink); font-weight: 600; max-width: 60%; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
+  .ctxbar a { color: var(--accent); text-decoration: none; margin-left: auto; }
+
+  /* ---------- lists ---------- */
+  .group {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 14px;
+    border-top: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .row:first-child { border-top: 0; }
+  .row:active { background: var(--card2); }
+  .row .t { flex: 1; min-width: 0; }
+  .row .t b {
+    display: block; font-weight: 600; font-size: 15px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .row .t span {
+    display: block; font-size: 12px; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .row .chev { color: var(--muted); font-size: 15px; }
+  .row .mark { color: var(--accent); font-size: 16px; font-weight: 700; }
+  .badge {
+    display: inline-block; padding: 1px 7px; border-radius: 999px;
+    font-size: 10px; font-weight: 700; letter-spacing: .3px; flex: 0 0 auto;
+  }
+  .badge.running, .badge.awaiting_approval { background: rgba(255,106,0,.18); color: var(--accent); }
+  .badge.done { background: rgba(52,199,89,.16); color: var(--ok); }
+  .badge.error, .badge.rejected, .badge.cancelled { background: rgba(255,69,58,.14); color: var(--err); }
+  .row .kill {
+    padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--card2); color: var(--err); font-size: 12px; font-weight: 700; cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .fs-prev {
+    margin-bottom: 12px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .fs-prev .hd {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; border-bottom: 1px solid var(--line);
+    font-size: 13px; font-weight: 700;
+  }
+  .fs-prev .hd a { margin-left: auto; color: var(--accent); text-decoration: none; font-size: 12px; }
+  .fs-prev pre {
+    margin: 0; padding: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; line-height: 1.5;
+    white-space: pre-wrap; word-break: break-word;
+    max-height: 52vh; overflow: auto;
+    color: var(--ink);
+  }
+  .note {
+    padding: 0 16px 14px;
+    color: var(--muted); font-size: 12px;
+  }
+  .hero {
+    margin: 4px 16px 14px;
+    padding: 16px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255,106,0,.18), rgba(255,106,0,.04));
+    border: 1px solid rgba(255,106,0,.28);
+  }
+  .hero .k { font-size: 12px; color: var(--muted); letter-spacing: .4px; }
+  .hero .v { font-size: 20px; font-weight: 800; margin-top: 4px; word-break: break-all; }
+  .hero .s { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  /* ---------- tabbar ---------- */
+  .tabbar {
+    position: sticky; bottom: 0; z-index: 20;
+    display: flex;
+    padding-bottom: var(--safe-b);
+    background: rgba(10,12,16,.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+  }
+  .tab {
+    flex: 1; padding: 9px 0 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    color: var(--muted); font-size: 10px; letter-spacing: .3px;
+    cursor: pointer;
+  }
+  .tab svg { width: 24px; height: 24px; display: block; }
+  .tab.active { color: var(--accent); }
+
+  /* ---------- sheet ---------- */
+  .backdrop {
+    position: fixed; inset: 0; z-index: 40;
+    background: rgba(0,0,0,.5);
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s ease;
+  }
+  .backdrop.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 41;
+    max-width: 430px; margin: 0 auto;
+    background: var(--card);
+    border-radius: 18px 18px 0 0;
+    border-top: 1px solid var(--line);
+    padding: 10px 0 calc(12px + var(--safe-b));
+    transform: translateY(102%);
+    transition: transform .26s cubic-bezier(.2,.8,.2,1);
+  }
+  .sheet.show { transform: translateY(0); }
+  .grab { width: 38px; height: 4px; border-radius: 2px; background: var(--line); margin: 4px auto 10px; }
+  .sheet h3 { margin: 0 0 8px; padding: 0 18px; font-size: 17px; }
+  .sheet .row { border-top-color: var(--line); }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: fixed; left: 50%; z-index: 50;
+    top: calc(var(--safe-t) + 62px);
+    transform: translate(-50%, -12px);
+    padding: 10px 16px; border-radius: 999px;
+    background: var(--accent); color: #fff;
+    font-size: 13px; font-weight: 600;
+    opacity: 0; pointer-events: none;
+    transition: all .25s ease;
+    max-width: 88%; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .empty { padding: 40px 18px; text-align: center; color: var(--muted); font-size: 13px; }
+  .login {
+    position: fixed; inset: 0; z-index: 60;
+    background: rgba(10,12,16,.96);
+    display: none; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .login.show { display: flex; }
+  .login .card {
+    width: 100%; max-width: 340px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px; padding: 20px 18px;
+  }
+  .login h2 { margin: 0 0 6px; font-size: 18px; }
+  .login p { margin: 0 0 14px; font-size: 12px; color: var(--muted); }
+  .login input {
+    width: 100%; padding: 11px 12px; margin-bottom: 12px;
+    border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink);
+    font: inherit; font-size: 14px; outline: none;
+  }
+  .login input:focus { border-color: var(--accent); }
+  .login button {
+    width: 100%; padding: 11px 0; border: 0; border-radius: 10px;
+    background: var(--accent); color: #fff; font-weight: 700; font-size: 15px; cursor: pointer;
+  }
+  .login .err { color: var(--err); font-size: 12px; min-height: 16px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<p data-aigc-mark="1" style="margin:0 0 8px;font-size:10px;line-height:1.3;color:#6b6560;font-weight:400;">AI生成</p>
+
+<div class="app">
+  <header class="nav">
+    <div class="nav-row">
+      <div class="logo">M</div>
+      <div class="brand">
+        <b>MiMo POCKET</b>
+        <span>unofficial · 个人制作</span>
+      </div>
+      <div class="beta">BETA</div>
+      <div class="spacer"></div>
+      <div class="pill" id="statusPill" title="点击切换服务地址">
+        <i class="dot demo" id="statusDot"></i>
+        <span id="statusText">连接中…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 会话 -->
+  <section class="view active" id="view-chat">
+    <div class="ctxbar">
+      <span>当前会话</span>
+      <b id="chatTitle">MiMo</b>
+      <a href="#" id="quickModel">换模型</a>
+      <a href="#" id="goHist">换会话 ›</a>
+    </div>
+    <div class="chat-scroll" id="chatScroll"></div>
+    <div id="activity"></div>
+    <div id="approveBar"></div>
+    <div class="composer">
+      <textarea id="input" rows="1" placeholder="对 MiMo 说点什么…"></textarea>
+      <button class="send" id="sendBtn" aria-label="发送">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h13M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- 文件 -->
+  <section class="view" id="view-files">
+    <div class="h1">文件</div>
+    <div class="sub" id="fsPath">工作目录（仅限此目录内）</div>
+    <div class="scroll">
+      <div id="fsPreview"></div>
+      <div class="group" id="fsList"></div>
+    </div>
+  </section>
+
+  <!-- 任务 -->
+  <section class="view" id="view-tasks">
+    <div class="h1">任务</div>
+    <div class="sub">监督桌面端执行：进行中可取消，危险操作可拦截</div>
+    <div class="scroll">
+      <div class="group" id="taskList"></div>
+      <div class="note">任务按开始时间倒序。点「取消」会立刻终止桌面端的执行进程。</div>
+    </div>
+  </section>
+
+  <!-- 模型 -->
+  <section class="view" id="view-model">
+    <div class="h1">模型</div>
+    <div class="hero">
+      <div class="k">当前使用</div>
+      <div class="v" id="curModel">—</div>
+      <div class="s">切换后下一条消息立即生效，无需重启服务</div>
+    </div>
+    <div class="sub">可选模型</div>
+    <div class="scroll">
+      <div class="group" id="modelList"></div>
+      <div class="note">模型来自本地 MiMoCode CLI 已登记的条目（xiaomi / deepseek 系）。换模型只影响手机侧，不影响电脑端。</div>
+    </div>
+  </section>
+
+  <!-- 历史 -->
+  <section class="view" id="view-hist">
+    <div class="h1">会话</div>
+    <div class="sub">点进任意会话，既可读记录，也可继续对话</div>
+    <div class="scroll">
+      <div class="group" id="sessList"></div>
+    </div>
+  </section>
+
+  <nav class="tabbar">
+    <div class="tab active" data-view="chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"/>
+      </svg>
+      <span>会话</span>
+    </div>
+    <div class="tab" data-view="files">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      </svg>
+      <span>文件</span>
+    </div>
+    <div class="tab" data-view="tasks">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 11l3 3 8-8"/>
+        <path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>
+      </svg>
+      <span>任务</span>
+    </div>
+    <div class="tab" data-view="model">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3.2"/>
+        <path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>
+      </svg>
+      <span>模型</span>
+    </div>
+    <div class="tab" data-view="hist">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 5h18M3 12h18M3 19h18"/>
+      </svg>
+      <span>历史</span>
+    </div>
+  </nav>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+<div class="login" id="login">
+  <div class="card">
+    <h2>连接 MiMo</h2>
+    <p>在电脑上对 MiMo 说「<b>给我配对码</b>」，或运行 <code>bridge.py pair</code>，把 6 位数字填在下面（不需要找令牌）。</p>
+    <input id="tokenInput" type="text" placeholder="6 位配对码" autocomplete="off" inputmode="numeric">
+    <button id="loginBtn">配对并进入</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <h3>切换模型</h3>
+  <div id="sheetList"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const servedByBridge = /\/app\/?$/.test(location.pathname);
+const DEFAULT_API = servedByBridge ? location.origin : 'http://127.0.0.1:8765';
+let API = localStorage.getItem('mimoApi') || DEFAULT_API;
+let demo = false;
+let sid = null;
+let chatTitle = '';
+let task = null;
+let taskStarted = 0;
+let msgs = [];
+
+const DEMO = {
+  models: ['xiaomi/mimo-v2.6-pro', 'xiaomi/mimo-v2.6-flash', 'xiaomi/mimo-v2.5', 'deepseek/deepseek-v4-flash'],
+  current: 'xiaomi/mimo-v2.6-flash',
+  sessions: [
+    {id: 'ses_demo001', title: '示例会话 · 项目讨论', updated: '01:00'},
+    {id: 'ses_demo002', title: '示例会话 · 数据分析', updated: '15:05'},
+    {id: 'ses_demo003', title: '示例会话 · 学习笔记', updated: '21:04'}
+  ],
+  history: [
+    {role: 'user', text: '你好，这是 MiMo POCKET beta。', time: Date.now() - 600000},
+    {role: 'assistant', text: '收到。这是个人制作的手机端 App：能和 MiMo 对话、换模型、进任意会话继续聊。顶栏状态点显示当前连接情况。', time: Date.now() - 590000}
+  ]
+};
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmt(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+}
+function toast(text) {
+  const el = $('toast');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+function setStatus(mode, text) {
+  $('statusDot').className = 'dot ' + (mode || '');
+  $('statusText').textContent = text;
+}
+async function loadStatus() {
+  let s = null;
+  try {
+    s = await Promise.race([
+      api('/api/status', {timeout: 6000}),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('连接超时')), 7000))
+    ]);
+  } catch (e) {
+    s = null;
+    if (e && e.status === 401) {
+      setStatus('', '未登录');
+      return null;
+    }
+  }
+  if (!s) {
+    demo = true;
+    setStatus('demo', '演示模式');
+    return null;
+  }
+  demo = false;
+  setStatus('on', s.model ? s.model.split('/').pop() : '在线');
+  return s;
+}
+let TOKEN = '';
+let DEV = null;
+try { DEV = JSON.parse(localStorage.getItem('mimoDevice') || 'null'); } catch (e) { DEV = null; }
+let sessionPromise = null;
+async function ensureSession() {
+  if (!DEV || !DEV.device_id) return false;
+  if (sessionPromise) return sessionPromise;
+  sessionPromise = (async () => {
+    try {
+      const res = await fetch(API + '/api/session', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(DEV),
+        cache: 'no-store'
+      });
+      const d = await res.json();
+      if (!d.ok) return false;
+      TOKEN = d.token;
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      sessionPromise = null;
+    }
+  })();
+  return sessionPromise;
+}
+function authHeaders(extra) {
+  const h = Object.assign({}, extra || {});
+  if (TOKEN) h['Authorization'] = 'Bearer ' + TOKEN;
+  return h;
+}
+function showLogin(msg) {
+  $('loginErr').textContent = msg || '';
+  $('login').classList.add('show');
+}
+function hideLogin() {
+  $('login').classList.remove('show');
+}
+async function api(path, opts) {
+  const o = Object.assign({cache: 'no-store'}, opts || {});
+  o.headers = authHeaders(o.headers);
+  const ctl = new AbortController();
+  o.signal = ctl.signal;
+  const to = setTimeout(() => ctl.abort(), (o && o.timeout) || 25000);
+  try {
+    const res = await fetch(API + path, o);
+    clearTimeout(to);
+    if (res.status === 401) {
+      if (TOKEN && !o._retried) {
+        const refreshed = await ensureSession();
+        if (refreshed) {
+          return api(path, Object.assign({}, opts, {_retried: true}));
+        }
+      }
+      if (!loginBusy) showLogin('令牌无效或未登录');
+      const err = new Error('unauthorized');
+      err.status = 401;
+      throw err;
+    }
+    return await res.json();
+  } catch (e) {
+    clearTimeout(to);
+    throw e;
+  }
+}
+let loginBusy = false;
+function normCode(s) {
+  let t = String(s || '').split(' ').join('').split('-').join('');
+  let out = '';
+  for (const ch of t) {
+    const c = ch.charCodeAt(0);
+    out += (c >= 65296 && c <= 65305) ? String.fromCharCode(c - 0xFEE0) : ch;
+  }
+  return out;
+}
+async function doLogin() {
+  if (loginBusy) return;
+  loginBusy = true;
+  try {
+    const v = normCode($('tokenInput').value);
+    if (!v) { $('loginErr').textContent = '请输入 6 位配对码'; return; }
+    try {
+      if (/^\d{6}$/.test(v)) {
+        const res = await fetch(API + '/api/pair', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({code: v}),
+          cache: 'no-store'
+        });
+        const d = await res.json();
+        if (!d.ok) throw new Error(d.error || '配对失败');
+        DEV = {device_id: d.device_id, device_secret: d.device_secret};
+        localStorage.setItem('mimoDevice', JSON.stringify(DEV));
+        localStorage.removeItem('mimoToken');
+        if (!(await ensureSession())) throw new Error('配对成功但换取会话令牌失败，请再试一次');
+      } else {
+        const res = await fetch(API + '/api/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({token: v}),
+          cache: 'no-store'
+        });
+        const d = await res.json();
+        if (!d.ok) throw new Error(d.error || '登录失败');
+        TOKEN = v;
+      }
+      $('tokenInput').value = '';
+      hideLogin();
+      toast('已连接');
+      boot();
+    } catch (e) {
+      $('loginErr').textContent = e.message || '登录失败';
+    }
+  } finally {
+    loginBusy = false;
+  }
+}
+$('loginBtn').addEventListener('click', doLogin);
+$('tokenInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    const v = t.dataset.view;
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+    document.querySelectorAll('.view').forEach(x => x.classList.toggle('active', x.id === 'view-' + v));
+    if (v === 'model') loadModels();
+    if (v === 'hist') loadSessions();
+    if (v === 'tasks') loadTasks();
+    if (v === 'files') loadFs();
+  });
+});
+$('goHist').addEventListener('click', e => {
+  e.preventDefault();
+  document.querySelector('.tab[data-view="hist"]').click();
+});
+
+/* ---------- chat ---------- */
+function renderChat() {
+  const box = $('chatScroll');
+  if (!msgs.length) {
+    box.innerHTML = '<div class="empty">还没有消息，在下面输入一句话开始。</div>';
+    return;
+  }
+  box.innerHTML = msgs.map(m => {
+    const mine = m.role === 'user';
+    return '<div class="msg ' + (mine ? 'me' : 'bot') + '"><div class="bubble">' + esc(m.text || '') + '</div></div>' +
+      '<div class="when">' + (mine ? '' : '<span>MiMo</span>') + '<span>' + esc(fmt(m.time)) + '</span></div>';
+  }).join('') + (task ? '<div class="msg bot"><div class="bubble"><span class="thinking"><i></i><i></i><i></i>&nbsp;MiMo 思考中 <b id="elapsed">' + Math.max(0, Math.round((Date.now() - taskStarted) / 1000)) + 's</b></span></div></div>' : '');
+  box.scrollTop = box.scrollHeight;
+}
+function append(role, text) {
+  msgs.push({role, text, time: Date.now()});
+  renderChat();
+}
+async function loadHistory() {
+  if (!sid) return;
+  if (demo) {
+    msgs = DEMO.history.slice();
+    chatTitle = chatTitle || '演示会话';
+    $('chatTitle').textContent = chatTitle;
+    renderChat();
+    return;
+  }
+  try {
+    const d = await api('/api/history?sid=' + encodeURIComponent(sid) + '&limit=60', {timeout: 60000});
+    msgs = (d.messages || []).map(m => ({role: m.role, text: m.text, time: m.time}));
+    if (!chatTitle && d.session) chatTitle = d.session.title || '';
+    $('chatTitle').textContent = chatTitle || '当前会话';
+    renderChat();
+  } catch (e) {
+    toast('读取失败：' + e.message);
+  }
+}
+async function send() {
+  const text = $('input').value.trim();
+  if (!text) return;
+  if (!sid) { toast('请先在「历史」里选一个会话'); return; }
+  append('user', text);
+  $('input').value = '';
+  if (demo) {
+    task = true; renderChat();
+    setTimeout(() => {
+      task = false;
+      append('assistant', '（演示模式）这条消息没有真的发出。把 API 指向 ' + API + ' 就能连上真实服务并立即生效。');
+    }, 900);
+    return;
+  }
+  task = true;
+  taskStarted = Date.now();
+  liveEvents = [];
+  pendingRisk = '';
+  renderActivity();
+  $('sendBtn').disabled = true;
+  renderChat();
+  try {
+    const d = await api('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({sid, text}),
+      timeout: 30000
+    });
+    if (!d.ok) throw new Error(d.error || 'send failed');
+    currentTaskId = d.task_id;
+    if (d.status === 'awaiting_approval') {
+      pendingRisk = d.risk || '未知风险';
+      renderActivity();
+    }
+    poll(d.task_id);
+  } catch (e) {
+    task = false;
+    $('sendBtn').disabled = false;
+    renderChat();
+    toast('发送失败：' + e.message);
+  }
+}
+let liveEvents = [];
+let pendingRisk = '';
+let currentTaskId = '';
+
+function renderActivity() {
+  const box = $('activity');
+  const bar = $('approveBar');
+  if (pendingRisk) {
+    bar.innerHTML = '<div class="approve-bar"><div class="risk">⚠️ 风险操作，需确认：' + esc(pendingRisk) + '</div>' +
+      '<div class="btns"><button class="no" id="btnReject">拒绝</button><button class="ok" id="btnApprove">允许执行</button></div></div>';
+    $('btnApprove').onclick = () => decide(true);
+    $('btnReject').onclick = () => decide(false);
+  } else {
+    bar.innerHTML = '';
+  }
+  if (!liveEvents.length) {
+    box.innerHTML = '';
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = '';
+  const shown = (liveEvents || []).filter(e => e.kind !== 'step');
+  const list = shown.length ? shown : (liveEvents || []);
+  box.innerHTML = list.slice(-8).map(e => {
+    const k = e.kind || '';
+    const tag = k === 'tool' ? '工具' : k === 'file' ? '文件' : k === 'error' ? '错误' : k === 'risk' ? '风险' : '回复';
+    return '<div class="ev ' + esc(k) + '"><b>' + tag + '</b><span>' + esc(e.label || e.text || '') + '</span></div>';
+  }).join('');
+}
+async function decide(approve) {
+  pendingRisk = '';
+  renderActivity();
+  try {
+    const d = await api('/api/chat/' + (approve ? 'approve' : 'reject'), {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({task_id: currentTaskId}),
+      timeout: 15000
+    });
+    if (!d.ok) throw new Error(d.error || 'failed');
+    if (!approve) {
+      task = false;
+      $('sendBtn').disabled = false;
+      renderChat();
+      append('assistant', (d.task && d.task.reply) || '已拒绝执行。');
+      return;
+    }
+    task = true;
+    taskStarted = Date.now();
+    $('sendBtn').disabled = true;
+    renderChat();
+    poll(currentTaskId);
+  } catch (e) {
+    toast('操作失败：' + e.message);
+  }
+}
+let pollBusy = false;
+async function poll(id) {
+  if (pollBusy) return;
+  pollBusy = true;
+  try {
+    await pollOnce(id);
+  } finally {
+    pollBusy = false;
+  }
+}
+async function pollOnce(id) {
+  const elapsed = Math.max(0, Math.round((Date.now() - taskStarted) / 1000));
+  const el = document.getElementById('elapsed');
+  if (el) el.textContent = elapsed + 's';
+  if (elapsed > 300 && !pendingRisk) {
+    task = false;
+    $('sendBtn').disabled = false;
+    renderChat();
+    append('assistant', '执行超时（300 秒），服务端任务可能已中断。可以直接重发一次。');
+    return;
+  }
+  let d;
+  try {
+    d = await api('/api/chat/status?task_id=' + encodeURIComponent(id), {timeout: 15000});
+  } catch (e) {
+    if (e && e.status === 401) {
+      task = false;
+      $('sendBtn').disabled = false;
+      renderChat();
+      return;
+    }
+    $('chatTitle').textContent = (chatTitle || '当前会话') + ' · 重试 ' + elapsed + 's';
+    setTimeout(() => poll(id), 5000);
+    return;
+  }
+  if (!d.ok) {
+    task = false;
+    $('sendBtn').disabled = false;
+    renderChat();
+    append('assistant', '任务已失效：' + (d.error || '服务可能重启过') + '。请重新发送一次。');
+    return;
+  }
+  if (d.events && d.events.length) {
+    liveEvents = d.events;
+    renderActivity();
+  }
+  if (d.status === 'awaiting_approval') {
+    pendingRisk = d.risk || '未知风险';
+    task = true;
+    renderActivity();
+    renderChat();
+    $('chatTitle').textContent = (chatTitle || '当前会话') + ' · 等待确认';
+    setTimeout(() => poll(id), 4000);
+    return;
+  }
+  if (d.status === 'running') {
+    $('chatTitle').textContent = (chatTitle || '当前会话') + ' · ' + elapsed + 's';
+    setTimeout(() => poll(id), 3000);
+    return;
+  }
+  task = false;
+  pendingRisk = '';
+  $('sendBtn').disabled = false;
+  $('chatTitle').textContent = chatTitle || '当前会话';
+  renderActivity();
+  renderChat();
+  if (d.status === 'done') {
+    append('assistant', d.reply || '(无文本)');
+  } else if (d.status === 'rejected') {
+    append('assistant', d.reply || '已拒绝执行。');
+  } else {
+    append('assistant', '执行失败：' + (d.reply || d.error || '未知错误'));
+  }
+}
+$('sendBtn').addEventListener('click', send);
+$('input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+
+/* ---------- files ---------- */
+let fsRel = '';
+async function loadFs() {
+  if (demo) {
+    $('fsPath').textContent = '演示模式';
+    $('fsList').innerHTML = '<div class="row"><div class="t"><b>index.html</b><span>24 KB</span></div><div class="chev">预览</div></div>';
+    return;
+  }
+  try {
+    const d = await api('/api/fs/list?path=' + encodeURIComponent(fsRel), {timeout: 20000});
+    if (!d.ok) throw new Error(d.error || 'failed');
+    $('fsPath').textContent = '/' + (d.path || '') + ' · ' + d.entries.length + ' 项（仅工作目录内）';
+    const up = fsRel ? '<div class="row" data-fsdir=".."><div class="t"><b>..</b><span>返回上级</span></div><div class="chev">›</div></div>' : '';
+    $('fsList').innerHTML = up + (d.entries || []).map(en => {
+      const isDir = en.type === 'dir';
+      const meta = isDir ? '文件夹' : (en.size > 1024 ? Math.round(en.size / 1024) + ' KB' : en.size + ' B');
+      const attr = isDir ? 'data-fsdir="' + esc(en.name) + '"' : 'data-fsfile="' + esc(en.name) + '"';
+      return '<div class="row" ' + attr + '>' +
+        '<div class="t"><b>' + (isDir ? '📁 ' : '📄 ') + esc(en.name) + '</b><span>' + meta + '</span></div>' +
+        '<div class="chev">' + (isDir ? '›' : '预览') + '</div></div>';
+    }).join('') || '<div class="empty">空目录</div>';
+    $('fsPreview').innerHTML = '';
+  } catch (e) {
+    $('fsList').innerHTML = '<div class="empty">读取失败：' + esc(e.message) + '</div>';
+  }
+}
+async function openFile(name) {
+  const rel = fsRel ? fsRel + '/' + name : name;
+  try {
+    const d = await api('/api/fs/read?path=' + encodeURIComponent(rel), {timeout: 30000});
+    if (!d.ok) throw new Error(d.error || 'failed');
+    $('fsPreview').innerHTML = '<div class="fs-prev"><div class="hd">' + esc(rel) +
+      ' <span style="color:var(--muted);font-weight:400">' + Math.round((d.size || 0) / 1024) + ' KB</span>' +
+      '<a href="#" id="fsClose">关闭预览</a></div><pre>' + esc(d.content || '') +
+      (d.truncated ? '\n…（已截断）' : '') + '</pre></div>';
+    $('fsClose').onclick = ev => { ev.preventDefault(); $('fsPreview').innerHTML = ''; };
+    $('fsPreview').scrollIntoView({block: 'start'});
+  } catch (e) {
+    toast('预览失败：' + e.message);
+  }
+}
+document.addEventListener('click', e => {
+  const dir = e.target.closest('[data-fsdir]');
+  if (dir) {
+    const name = dir.dataset.fsdir;
+    if (name === '..') {
+      const parts = fsRel.split('/').filter(Boolean);
+      parts.pop();
+      fsRel = parts.join('/');
+    } else {
+      fsRel = fsRel ? fsRel + '/' + name : name;
+    }
+    loadFs();
+    return;
+  }
+  const file = e.target.closest('[data-fsfile]');
+  if (file) openFile(file.dataset.fsfile);
+});
+
+/* ---------- tasks ---------- */
+const STATUS_ZH = {running: '执行中', awaiting_approval: '待确认', done: '完成', error: '失败', rejected: '已拒绝', cancelled: '已取消'};
+async function loadTasks() {
+  const box = $('taskList');
+  let items = [];
+  if (demo) {
+    items = [
+      {id: 'demo1', status: 'done', text: '汇报今天的进度', reply: '已完成', risk: '', events: 4},
+      {id: 'demo2', status: 'awaiting_approval', text: '请执行 rm -rf 测试目录', reply: '', risk: '删除文件', events: 1}
+    ];
+  } else {
+    try {
+      const d = await api('/api/tasks', {timeout: 20000});
+      items = d.tasks || [];
+    } catch (e) {
+      box.innerHTML = '<div class="empty">读取失败：' + esc(e.message) + '</div>';
+      return;
+    }
+  }
+  if (!items.length) {
+    box.innerHTML = '<div class="empty">还没有任务。在「会话」里发一条指令就会出现在这里。</div>';
+    return;
+  }
+  box.innerHTML = items.map(t => {
+    const st = t.status || '';
+    const label = STATUS_ZH[st] || st;
+    const live = st === 'running' || st === 'awaiting_approval';
+    const sub = (t.risk ? '风险：' + t.risk + ' · ' : '') +
+      (t.events ? '步骤 ' + t.events + ' · ' : '') +
+      (t.reply || label);
+    return '<div class="row" data-task="' + esc(t.id) + '">' +
+      '<div class="t"><b>' + esc(t.text || t.id) + '</b><span>' + esc(sub) + '</span></div>' +
+      '<span class="badge ' + esc(st) + '">' + esc(label) + '</span>' +
+      (live ? '<button class="kill" data-kill="' + esc(t.id) + '">取消</button>' : '') +
+      '</div>';
+  }).join('');
+}
+document.addEventListener('click', async e => {
+  const kill = e.target.closest('[data-kill]');
+  if (!kill) return;
+  e.stopPropagation();
+  try {
+    const d = await api('/api/chat/cancel', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({task_id: kill.dataset.kill}),
+      timeout: 15000
+    });
+    if (!d.ok) throw new Error(d.error || 'failed');
+    toast('已取消');
+    loadTasks();
+  } catch (err) {
+    toast('取消失败：' + err.message);
+  }
+});
+
+/* ---------- models ---------- */
+let modelItems = [];
+let currentModel = '';
+function renderModels() {
+  const rows = modelItems.map(m => {
+    const on = m === currentModel;
+    return '<div class="row" data-model="' + esc(m) + '">' +
+      '<div class="t"><b>' + esc(m) + '</b><span>' + (on ? '使用中' : '点按切换') + '</span></div>' +
+      (on ? '<div class="mark">✓</div>' : '<div class="chev">›</div>') +
+      '</div>';
+  }).join('');
+  $('modelList').innerHTML = rows || '<div class="empty">没有可选模型</div>';
+  $('sheetList').innerHTML = rows;
+  $('curModel').textContent = currentModel || '—';
+}
+async function loadModels() {
+  if (demo) {
+    modelItems = DEMO.models.slice();
+    currentModel = currentModel || DEMO.current;
+    renderModels();
+    return;
+  }
+  try {
+    const d = await api('/api/models', {timeout: 60000});
+    modelItems = d.models || [];
+    currentModel = d.current || currentModel;
+    renderModels();
+  } catch (e) {
+    toast('模型列表失败：' + e.message);
+  }
+}
+async function switchModel(m) {
+  if (demo) {
+    currentModel = m;
+    renderModels();
+    toast('已切换 ' + m);
+    closeSheet();
+    return;
+  }
+  try {
+    const d = await api('/api/model', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({model: m}),
+      timeout: 15000
+    });
+    if (!d.ok) throw new Error(d.error || 'save failed');
+    currentModel = d.model;
+    renderModels();
+    setStatus('on', currentModel.split('/').pop());
+    toast('已切换 ' + d.model);
+    closeSheet();
+  } catch (e) {
+    toast('切换失败：' + e.message);
+  }
+}
+document.addEventListener('click', e => {
+  const row = e.target.closest('.row[data-model]');
+  if (row) switchModel(row.dataset.model);
+});
+
+/* ---------- sessions ---------- */
+async function loadSessions() {
+  const box = $('sessList');
+  let items = [];
+  if (demo) {
+    items = DEMO.sessions.slice();
+  } else {
+    try {
+      const d = await api('/api/sessions', {timeout: 60000});
+      items = d.sessions || [];
+    } catch (e) {
+      box.innerHTML = '<div class="empty">读取失败：' + esc(e.message) + '</div>';
+      return;
+    }
+  }
+  if (!items.length) {
+    box.innerHTML = '<div class="empty">还没有会话</div>';
+    return;
+  }
+  box.innerHTML = items.map(s =>
+    '<div class="row" data-sid="' + esc(s.id) + '" data-title="' + esc(s.title || '') + '">' +
+    '<div class="t"><b>' + esc(s.title || '(无标题)') + '</b><span>' + esc(s.updated || s.id) + '</span></div>' +
+    '<div class="chev">›</div></div>'
+  ).join('');
+}
+document.addEventListener('click', e => {
+  const row = e.target.closest('.row[data-sid]');
+  if (!row) return;
+  sid = row.dataset.sid;
+  chatTitle = row.dataset.title || '';
+  msgs = [];
+  task = null;
+  document.querySelector('.tab[data-view="chat"]').click();
+  $('chatTitle').textContent = chatTitle || '当前会话';
+  renderChat();
+  loadHistory();
+  toast('已进入：' + (chatTitle || sid));
+});
+
+/* ---------- sheet ---------- */
+function openSheet() {
+  $('sheet').classList.add('show');
+  $('backdrop').classList.add('show');
+}
+function closeSheet() {
+  $('sheet').classList.remove('show');
+  $('backdrop').classList.remove('show');
+}
+$('backdrop').addEventListener('click', closeSheet);
+$('quickModel').addEventListener('click', e => { e.preventDefault(); openSheet(); });
+
+/* ---------- status pill / API base ---------- */
+$('statusPill').addEventListener('click', () => {
+  const v = prompt('服务地址（API base）', API);
+  if (v && v.trim()) {
+    API = v.trim().replace(/\/+$/, '');
+    localStorage.setItem('mimoApi', API);
+    boot();
+    toast('已切换到 ' + API);
+  }
+});
+
+/* ---------- boot ---------- */
+async function boot() {
+  setStatus('', '连接中…');
+  if (!TOKEN && DEV) {
+    await ensureSession();
+  }
+  const s = await loadStatus();
+  if (s) {
+    currentModel = s.model || currentModel;
+    if (!sid) {
+      sid = s.phone_session_id || null;
+      chatTitle = 'MiMo · 手机会话';
+    }
+    loadModels();
+    if (!sid) loadSessions();
+    else loadHistory();
+    $('chatTitle').textContent = chatTitle || '当前会话';
+    setStatus('on', (currentModel || '').split('/').pop() || '在线');
+  } else {
+    if ($('login').classList.contains('show')) {
+      renderChat();
+      return;
+    }
+    if (!sid) { sid = 'ses_demo001'; chatTitle = DEMO.sessions[0].title; }
+    loadModels();
+    loadHistory();
+  }
+  renderChat();
+}
+boot();
+(function autoPairFromHash() {
+  const h = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+  const code = (h.get('pair') || '').trim();
+  if (!/^\d{6}$/.test(code)) return;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  $('tokenInput').value = code;
+  showLogin('扫码配对中…');
+  doLogin();
+})();
+function resumePoll() {
+  if (task && currentTaskId) poll(currentTaskId);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    resumePoll();
+    loadHistory(false);
+  }
+});
+window.addEventListener('focus', resumePoll);
+window.addEventListener('pageshow', resumePoll);
+</script>
+</body>
+</html>
