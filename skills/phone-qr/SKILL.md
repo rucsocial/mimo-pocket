@@ -32,5 +32,5 @@ $bridge = "$env:USERPROFILE\.config\mimocode\skills\phone-remote\scripts\bridge.
 
 - 二维码里的 URL 形如 `http://<电脑局域网IP>:8765/app#pair=<6位码>`，其中 `#pair=` 就是一次性配对码，**不含**设备凭据与长期令牌。
 - 不要把 `auth_token.txt` 的内容贴进对话或二维码；手机端永远不使用固定令牌（配对成功后由 `/api/session` 下发当次随机令牌）。
-- 若 `qr` 命令报「二维码生成失败」，检查 `<home>/qrtool/node_modules/qrcode` 是否存在（`<home>` = `~\.local\share\mimocode\phone-remote`），必要时在 `qrtool` 目录执行 `npm install qrcode`。
+- 若 `qr` 命令报「二维码生成失败」，检查仓库 `bridge/node_modules/qrcode` 是否已安装（在 `bridge` 目录执行 `npm install`），以及 `bridge/qr.js` 是否存在。
 - 若手机扫不开链接，多半是手机与电脑不在同一 Wi-Fi；出门场景需要先配好 Tailscale。

@@ -1746,7 +1746,8 @@ def session_token_ok(supplied: str) -> bool:
     return time.time() <= float(rec.get("expires") or 0)
 
 
-QRTOOL = _HOME / "qrtool" / "qr.js"
+BRIDGE_DIR = Path(__file__).resolve().parent
+QRTOOL = BRIDGE_DIR / "qr.js"
 QR_DIR = _HOME / "qr"
 APP_FILE = WORKDIR / "index.html"
 
@@ -1776,7 +1777,7 @@ def find_cloudflared() -> str:
     for cand in (
         os.environ.get("PHONE_REMOTE_CLOUDFLARED") or "",
         str(_HOME / "tunnel-bin" / name),
-        str(_HOME / "qrtool" / "node_modules" / ".bin" / ("cloudflared.cmd" if os.name == "nt" else "cloudflared")),
+        str(BRIDGE_DIR / "node_modules" / ".bin" / ("cloudflared.cmd" if os.name == "nt" else "cloudflared")),
     ):
         if cand and Path(cand).exists():
             return cand
@@ -1879,7 +1880,13 @@ def render_pair_qr(port: int | None = None) -> dict:
     QR_DIR.mkdir(parents=True, exist_ok=True)
     out = QR_DIR / "pair.png"
     node = shutil_which("node") or "node"
-    proc = subprocess.run([node, str(QRTOOL), url, str(out)], capture_output=True, timeout=30)
+    # cwd=bridge dir so `require('qrcode')` resolves to bridge/node_modules
+    proc = subprocess.run(
+        [node, str(QRTOOL), url, str(out)],
+        capture_output=True,
+        timeout=30,
+        cwd=str(BRIDGE_DIR),
+    )
     if proc.returncode != 0 or not out.exists():
         err = ANSI_RE.sub("", (proc.stderr or b"").decode("utf-8", "replace") if isinstance(proc.stderr, bytes) else (proc.stderr or ""))
         raise RuntimeError("二维码生成失败：" + (err.strip()[:200] or "unknown"))

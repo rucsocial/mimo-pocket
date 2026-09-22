@@ -40,10 +40,7 @@ Write-Host "    mimo   : $mimo"
 
 Write-Host "==> [2/5] 安装二维码依赖 (qrcode)" -ForegroundColor Cyan
 Push-Location $BridgeDir
-& $node (Join-Path (Split-Path $node) "..\lib\node_modules\npm\bin\npm-cli.js") install --no-fund --no-audit 2>$null
-if (-not (Test-Path (Join-Path $BridgeDir "node_modules\qrcode"))) {
-    npm install --no-fund --no-audit
-}
+npm install --no-fund --no-audit
 Pop-Location
 if (-not (Test-Path (Join-Path $BridgeDir "node_modules\qrcode"))) {
     Write-Host "    qrcode 安装失败，请手动在 bridge 目录执行 npm install"; exit 1
@@ -88,10 +85,13 @@ Start-Sleep -Seconds 6
 Write-Host ""
 Write-Host "安装完成！" -ForegroundColor Green
 Write-Host ""
+$port = if ($env:PHONE_REMOTE_PORT) { $env:PHONE_REMOTE_PORT } else { "8765" }
 Write-Host "  1) 获取配对二维码（三选一）：" -ForegroundColor Yellow
 Write-Host "       · 在 MiMo Desktop 说「给我配对码」"
-Write-Host "       · 电脑浏览器打开 http://127.0.0.1:8765/pair"
+Write-Host "       · 电脑浏览器打开 http://127.0.0.1:$port/pair"
 Write-Host "       · 终端运行：  `"$py`" `"$BridgeDir\bridge.py`" qr"
+Write-Host "     （手机请用 status 打印的 LAN 地址，见下）"
+& $py "$BridgeDir\bridge.py" status | Select-String "urls:|http" | ForEach-Object { Write-Host "       $($_.Line)" }
 Write-Host ""
 Write-Host "  2) 手机扫码 → 自动打开页面并配对 → 建议「添加到主屏幕」"
 Write-Host ""
